@@ -1,0 +1,34 @@
+package com.finance.tracker;
+
+import java.util.Date;
+
+public class Transaction {
+    private final String description;
+    private final double amount;
+    private final String category;
+    private final Date date;
+
+    public Transaction(String description, double amount, String category) {
+        this.description = description;
+        this.amount = amount;
+        this.category = category;
+        this.date = new Date();
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public double getAmount() {
+        return amount;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s | %.2f | %s | %s", description, amount, category, date.toString());
+    }
+}
