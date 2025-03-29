@@ -2,20 +2,22 @@ package com.finance.tracker;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.stream.Collectors;
 
 class Transaction {
-    private String description;
-    private double amount;
-    private String category;
-    private Date date;
+    private final String description;
+    private final double amount;
+    private final String category;
+    private final Date date;
 
-    public Transaction(String description, double amount, String category, Date date) {
+    public Transaction(String description, double amount, String category) {
         this.description = description;
         this.amount = amount;
         this.category = category;
-        this.date = date;
+        this.date = new Date();
     }
 
     public String getCategory() {
@@ -32,15 +34,15 @@ class Transaction {
 
     @Override
     public String toString() {
-        return description + " | " + amount + " | " + category + " | " + date;
+        return String.format("%s | %.2f | %s | %s", description, amount, category, date.toString());
     }
 }
 
 public class FinanceTracker {
-    private List<Transaction> transactions = new ArrayList<>();
+    private final List<Transaction> transactions = new ArrayList<>();
 
     public void addTransaction(String description, double amount, String category) {
-        transactions.add(new Transaction(description, amount, category, new Date()));
+        transactions.add(new Transaction(description, amount, category));
     }
 
     public List<Transaction> filterByCategory(String category) {
@@ -68,33 +70,36 @@ public class FinanceTracker {
     }
 
     public static void main(String[] args) {
-        FinanceTracker tracker = new FinanceTracker();
-
-        SwingUtilities.invokeLater(() -> new FinanceTrackerUI(tracker));
+        SwingUtilities.invokeLater(FinanceTrackerUI::new);
     }
 }
 
 class FinanceTrackerUI extends JFrame {
-    private FinanceTracker tracker;
-    private DefaultListModel<String> listModel;
-    private JList<String> transactionList;
-    
-    public FinanceTrackerUI(FinanceTracker tracker) {
-        this.tracker = tracker;
+    private final FinanceTracker tracker;
+    private final DefaultListModel<String> listModel;
+    private final JList<String> transactionList;
+    private final JTextField descField;
+    private final JTextField amountField;
+    private final JTextField categoryField;
+
+    public FinanceTrackerUI() {
+        this.tracker = new FinanceTracker();
         this.listModel = new DefaultListModel<>();
         this.transactionList = new JList<>(listModel);
-        
+        this.descField = new JTextField();
+        this.amountField = new JTextField();
+        this.categoryField = new JTextField();
+
         setTitle("Finance Tracker");
-        setSize(400, 300);
+        setSize(500, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+
+        JPanel inputPanel = new JPanel(new GridLayout(4, 2, 5, 5));
+        inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
-        JPanel inputPanel = new JPanel(new GridLayout(4, 2));
-        JTextField descField = new JTextField();
-        JTextField amountField = new JTextField();
-        JTextField categoryField = new JTextField();
         JButton addButton = new JButton("Add Transaction");
-        
+
         inputPanel.add(new JLabel("Description:"));
         inputPanel.add(descField);
         inputPanel.add(new JLabel("Amount:"));
@@ -102,28 +107,37 @@ class FinanceTrackerUI extends JFrame {
         inputPanel.add(new JLabel("Category:"));
         inputPanel.add(categoryField);
         inputPanel.add(addButton);
-        
-        addButton.addActionListener(e -> {
-            try {
-                String desc = descField.getText();
-                double amount = Double.parseDouble(amountField.getText());
-                String category = categoryField.getText();
-                tracker.addTransaction(desc, amount, category);
-                updateTransactionList();
-                descField.setText("");
-                amountField.setText("");
-                categoryField.setText("");
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Invalid amount", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-        
+
+        addButton.addActionListener(e -> addTransaction());
+
         add(inputPanel, BorderLayout.NORTH);
         add(new JScrollPane(transactionList), BorderLayout.CENTER);
-        
+
         setVisible(true);
     }
-    
+
+    private void addTransaction() {
+        try {
+            String desc = descField.getText().trim();
+            double amount = Double.parseDouble(amountField.getText().trim());
+            String category = categoryField.getText().trim();
+
+            if (desc.isEmpty() || category.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "All fields must be filled", "Input Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            tracker.addTransaction(desc, amount, category);
+            updateTransactionList();
+
+            descField.setText("");
+            amountField.setText("");
+            categoryField.setText("");
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid amount. Please enter a valid number.", "Input Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private void updateTransactionList() {
         listModel.clear();
         for (Transaction t : tracker.getTransactions()) {
