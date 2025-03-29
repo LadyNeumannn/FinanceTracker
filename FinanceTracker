@@ -1,0 +1,133 @@
+package com.finance.tracker;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.*;
+import java.util.stream.Collectors;
+
+class Transaction {
+    private String description;
+    private double amount;
+    private String category;
+    private Date date;
+
+    public Transaction(String description, double amount, String category, Date date) {
+        this.description = description;
+        this.amount = amount;
+        this.category = category;
+        this.date = date;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public double getAmount() {
+        return amount;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    @Override
+    public String toString() {
+        return description + " | " + amount + " | " + category + " | " + date;
+    }
+}
+
+public class FinanceTracker {
+    private List<Transaction> transactions = new ArrayList<>();
+
+    public void addTransaction(String description, double amount, String category) {
+        transactions.add(new Transaction(description, amount, category, new Date()));
+    }
+
+    public List<Transaction> filterByCategory(String category) {
+        return transactions.stream()
+                .filter(t -> t.getCategory().equalsIgnoreCase(category))
+                .collect(Collectors.toList());
+    }
+
+    public double calculateTotalExpenses() {
+        return transactions.stream()
+                .filter(t -> t.getAmount() < 0)
+                .mapToDouble(Transaction::getAmount)
+                .sum();
+    }
+
+    public double calculateTotalIncome() {
+        return transactions.stream()
+                .filter(t -> t.getAmount() > 0)
+                .mapToDouble(Transaction::getAmount)
+                .sum();
+    }
+
+    public List<Transaction> getTransactions() {
+        return transactions;
+    }
+
+    public static void main(String[] args) {
+        FinanceTracker tracker = new FinanceTracker();
+
+        SwingUtilities.invokeLater(() -> new FinanceTrackerUI(tracker));
+    }
+}
+
+class FinanceTrackerUI extends JFrame {
+    private FinanceTracker tracker;
+    private DefaultListModel<String> listModel;
+    private JList<String> transactionList;
+    
+    public FinanceTrackerUI(FinanceTracker tracker) {
+        this.tracker = tracker;
+        this.listModel = new DefaultListModel<>();
+        this.transactionList = new JList<>(listModel);
+        
+        setTitle("Finance Tracker");
+        setSize(400, 300);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+        
+        JPanel inputPanel = new JPanel(new GridLayout(4, 2));
+        JTextField descField = new JTextField();
+        JTextField amountField = new JTextField();
+        JTextField categoryField = new JTextField();
+        JButton addButton = new JButton("Add Transaction");
+        
+        inputPanel.add(new JLabel("Description:"));
+        inputPanel.add(descField);
+        inputPanel.add(new JLabel("Amount:"));
+        inputPanel.add(amountField);
+        inputPanel.add(new JLabel("Category:"));
+        inputPanel.add(categoryField);
+        inputPanel.add(addButton);
+        
+        addButton.addActionListener(e -> {
+            try {
+                String desc = descField.getText();
+                double amount = Double.parseDouble(amountField.getText());
+                String category = categoryField.getText();
+                tracker.addTransaction(desc, amount, category);
+                updateTransactionList();
+                descField.setText("");
+                amountField.setText("");
+                categoryField.setText("");
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid amount", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        
+        add(inputPanel, BorderLayout.NORTH);
+        add(new JScrollPane(transactionList), BorderLayout.CENTER);
+        
+        setVisible(true);
+    }
+    
+    private void updateTransactionList() {
+        listModel.clear();
+        for (Transaction t : tracker.getTransactions()) {
+            listModel.addElement(t.toString());
+        }
+    }
+}
